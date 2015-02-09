@@ -23,15 +23,25 @@ var world=[
         {p:[[5,2,1],[5,2,2],[5,1,2],[5,1,1]], i:1}
     ],
     [
-        {p:[[6,0,0],[6,3,0],[9,3,3],[9,0,3]], i:-1},
+        // {p:[[6,0,0],[6,3,0],[9,3,3],[9,0,3]], i:-1},
         {p:[[5,2,1],[5,2,2],[5.5,2,2],[5.5,2,1]], i:-1},
         {p:[[5,1,2],[5,1,1],[5.5,1,1],[5.5,1,2]], i:-1},
         {p:[[5,1,1],[5,2,1],[5.5,2,1],[5.5,1,1]], i:-1},
-        {p:[[5,2,2],[5,1,2],[5.5,1,2],[5.5,2,2]], i:-1}
+        {p:[[5,2,2],[5,1,2],[5.5,1,2],[5.5,2,2]], i:-1},
+        {p:[[5,1,2],[5,2,2],[5,2,1],[5,1,1]], i:0},
+        {p:[[5.5,1,1],[5.5,2,1],[5.5,2,2],[5.5,1,2]], i:2}
+    ],
+    [
+        {p:[[6,0,0],[6,3,0],[9,3,3],[9,0,3]], i:-1},
+        {p:[[5.5,1,2],[5.5,2,2],[5.5,2,1],[5.5,1,1]], i:1}
         
     ]
 ];
 
+var textures=[
+    
+];
+// a
 
 var gf=function(){
     this.mul=function(a, x){
@@ -117,6 +127,10 @@ var gf=function(){
         return beam;
     };
     
+    // this.pih=function(p, h){
+        
+    // };
+    
     this.qm=function(a, b){
         return [a[0]*b[0] - a[1]*b[1] - a[2]*b[2] - a[3]*b[3],
                 a[0]*b[1] + a[1]*b[0] + a[2]*b[3] - a[3]*b[2],
@@ -132,25 +146,26 @@ var gf=function(){
     };
 };
 
-var rq=[1, 0, 0, 0], vo=[1.1, 1.1, 1.1], vdo=[0.1, 0, 0];
+var rq=[1, 0, 0, 0], vo=[1.1, 1.1, 1.1], vdo=[0.1, 0, 0], vhi=0;
 rq=[2,1,1,1];
+var mapon=1;
 
-var rpoly=function(poly, vt,vn,vu,vv, vo,vf,vr,vd, p,wid,hei,tex,br){
+var rpoly=function(p3, pt, po, p,wid,hei,tex,br){
     var g=new this.gf();//this.g;
     var i;
-    var poly2=[], v, n=poly.length;
+    var p2=[], v, n=p3.length;
     if(n<=0){return;}
     for(i=0; i<n; i++){
-        v=g.sub(poly[i], vo);
-        var m=0.49/g.dot(v, vf);
-        poly2[i]=[wid*(0.5 + g.dot(v, vr)*m),
-                  hei*(0.5 + g.dot(v, vd)*m)];
+        v=g.sub(p3[i], po[0]);
+        var m=0.49/g.dot(v, po[1]);
+        p2[i]=[wid*(0.5 + g.dot(v, po[2])*m),
+               hei*(0.5 + g.dot(v, po[3])*m)];
     }
     
     for(var y=hei, i=0, j=0; i<n; i++){
-        if(poly2[i][1]<y){
+        if(p2[i][1]<y){
             j=i;
-            y=poly2[i][1];
+            y=p2[i][1];
         }
     }
     
@@ -158,14 +173,19 @@ var rpoly=function(poly, vt,vn,vu,vv, vo,vf,vr,vd, p,wid,hei,tex,br){
     if(y<0){y=0;}
     var i0=j - 1, pi0=j, i1=j + 1, pi1=j;
     
-    var vp=g.sub(vo, vt),
-        v0=g.add(g.add(g.mul(vr, -1/0.98), g.mul(vd, -1/0.98)), vf);
-    var num=-g.dot(vp, vn),
-        ou=g.dot(vp, vu), ov=g.dot(vp, vv),
-        a0=g.dot(v0, vn), du_da0=g.dot(v0, vu), dv_da0=g.dot(v0, vv),
-        da_dx=g.dot(vr, vn)/(wid*0.49), da_dy=g.dot(vd, vn)/(hei*0.49),
-        du_dx=g.dot(vr, vu)/(wid*0.49), du_dy=g.dot(vd, vu)/(hei*0.49),
-        dv_dx=g.dot(vr, vv)/(wid*0.49), dv_dy=g.dot(vd, vv)/(hei*0.49);
+    var vp=g.sub(po[0], pt[0]),
+        v0=g.add(g.add(g.mul(po[2], -1/0.98),
+            g.mul(po[3], -1/0.98)), po[1]);
+    var num=-g.dot(vp, pt[1]),
+        ou=g.dot(vp, pt[2]), ov=g.dot(vp, pt[3]),
+        a0=g.dot(v0, pt[1]),
+            du_da0=g.dot(v0, pt[2]), dv_da0=g.dot(v0, pt[3]),
+        da_dx=g.dot(po[2], pt[1])/(wid*0.49),
+        da_dy=g.dot(po[3], pt[1])/(hei*0.49),
+        du_dx=g.dot(po[2], pt[2])/(wid*0.49),
+        du_dy=g.dot(po[3], pt[2])/(hei*0.49),
+        dv_dx=g.dot(po[2], pt[3])/(wid*0.49),
+        dv_dy=g.dot(po[3], pt[3])/(hei*0.49);
     
     // var b0=br[0]*0x100000|0,
     //     b1=(br[1] - br[0])*0x4000|0,
@@ -177,10 +197,10 @@ var rpoly=function(poly, vt,vn,vu,vv, vo,vf,vr,vd, p,wid,hei,tex,br){
     while(y<hei){
         if(i0<0){i0=n-1;}
         if(i1>=n){i1=0;}
-        var y0=poly2[pi0][1], y1=poly2[i0][1],
-            y2=poly2[pi1][1], y3=poly2[i1][1],
-            x0=poly2[pi0][0], x1=poly2[i0][0],
-            x2=poly2[pi1][0], x3=poly2[i1][0];
+        var y0=p2[pi0][1], y1=p2[i0][1],
+            y2=p2[pi1][1], y3=p2[i1][1],
+            x0=p2[pi0][0], x1=p2[i0][0],
+            x2=p2[pi1][0], x3=p2[i1][0];
         if(y1<y0 || y3<y2){break;}
         if(y1<y){pi0=i0; i0--; continue;}
         if(y3<y){pi1=i1; i1++; continue;}
@@ -199,19 +219,17 @@ var rpoly=function(poly, vt,vn,vu,vv, vo,vf,vr,vd, p,wid,hei,tex,br){
             dv=dv_da0 + dv_dx*xl + dv_dy*y;
         
         // var mm=1/a;
-        // while(np-->0){
             // mm*=2 - mm*a;
             // var m=num*mm;
         for(var el=l + (xr - xl << 2); l<el;
             l+=4, du+=du_dx, dv+=dv_dx, a+=da_dx){
             var m=num/a;
-            var c=tex[((ou + m*du)*64&63)|((ov + m*dv)*64&63)<<6];
-            // var c=tex[(u&63)|(v&63)<<6],
+            var c=tex[((ou + m*du)&0x3f)|((ov + m*dv)&0x3f)<<6];
             //     b=b0 + u*(b1 + v*b2) + v*b3;
             
             p[l  ]=(c>>16)*b >> 8;
-            p[l+1]=(c>>8&255)*b >> 8;
-            p[l+2]=(c&255)*b >> 8;
+            p[l+1]=(c>>8&0xff)*b >> 8;
+            p[l+2]=(c&0xff)*b >> 8;
         }
         
         y++;
@@ -249,13 +267,14 @@ var gtex=[], ntex=[0,6,0,0], texf=function(x,y){
                 }
             }
         }
-        h=(sqrt(d1) - sqrt(d0))*20;
+        h=(sqrt(d1) - sqrt(d0))*15;
         if(h>1){h=1;}
         if(h<0){h=0;}
         h*=h*(3 - 2*h);
         var w=rn0*1e-8;
         m=noise(d0x, d0y, w);
         w=noise(w + m*16, d0x*6, d0y*6);
+        w*=w*(3 - 2*w);
         m=(h*0.5 + 0.5)*w;
         
         if(i===0){m0=m;x+=1e-6;}
@@ -266,13 +285,19 @@ var gtex=[], ntex=[0,6,0,0], texf=function(x,y){
                 g.norm([1,1,9]));
     n=(n + 1)*0.5;
     // var 
-    var c0=[0xcc9955, 0x669988][rn0&1],
+    var c0=[0xcc9955, 0x778899][rn0&1],
         c1=[0xeeee99, 0xeeeeee][rn0&1],
         c2=180;//lerpColor(c0,c1,0.5);
     return lerpColor(0, lerpColor(c2, lerpColor(c0, c1, m0*m0*(3 - 2*m0)), h), 0.5*(n - 1) + 1)&0xffffff;
 };
 
-var kp=[], keyPressed=function(){kp[keyCode]=1;if(keyCode===SHIFT){gtex.length=0;ntex=[0,6,0,0];}},keyReleased=function(){kp[keyCode]=0;};
+var kp=[], keyPressed=function(){
+    kp[keyCode]=1;
+    if(keyCode===SHIFT){gtex.length=0;ntex=[0,6,0,0];}
+    if(keyCode==='M'.charCodeAt(0)){mapon^=1;}
+    
+},keyReleased=function(){kp[keyCode]=0;};
+for(var i=0; i<256; i++){kp[i]=0;}
 
 var view=function(world, hi, o, beam){
     var g=new this.gf();
@@ -303,6 +328,49 @@ var view=function(world, hi, o, beam){
         // stack.length--;
     }
     return vd;
+};
+
+var lms=0;
+var phys=function(){
+    var g=new gf();
+    
+    var ms=millis(), dt=lms ? (ms - lms)*1e-3 : 0;
+    if(dt>0.3){dt=0.3;}
+    lms=ms;
+    
+    // rq=g.norm(g.qm(rq,
+    //     [1, -(mouseY - height/2)*1e-4, (mouseX - width/2)*1e-4, 0]));
+    // vdo=g.mul(g.add(vdo, g.mul(g.qrot(rq, [0,0,1]), 
+    //     (mouseIsPressed?0.01:0)*(mouseButton===RIGHT?-1:1))), 0.9);
+    rq=g.norm(g.qm(rq,
+        [1, (kp[UP] - kp[DOWN])*2e-2, (kp[RIGHT] - kp[LEFT])*2e-2, 0]));
+    
+    vdo=g.mul(vdo, pow(0.1, dt));
+    vdo=g.add(vdo, g.mul(g.qrot(rq, [0,0,1]), 
+        (kp['W'.charCodeAt(0)] - kp['S'.charCodeAt(0)])*10*dt));
+    vdo=g.add(vdo, g.mul(g.qrot(rq, [1,0,0]), 
+        (kp['D'.charCodeAt(0)] - kp['A'.charCodeAt(0)])*10*dt));
+    vdo=g.add(vdo, g.mul(g.qrot(rq, [0,1,0]), 
+        (kp['Q'.charCodeAt(0)] - kp['E'.charCodeAt(0)])*10*dt));
+    
+    vdo=g.add(vdo, [0,sin(ms*2e-1)*4e-3,0]);
+    vo=g.add(vo, g.mul(vdo, dt));
+    
+    for(var i=-1; i<world.length; i++){
+        var h=world[i>=0?i:vhi];
+        for(var j=0; j<h.length; j++){
+            var p=h[j].p;
+            if(g.dot(g.sub(p[0], vo),
+                g.cross(g.sub(p[1], p[0]), g.sub(p[2], p[1])))<0){
+                j=0;
+                break;
+            }
+        }
+        if(j){
+            vhi=i>=0?i:vhi;
+            break;
+        }
+    }
 };
 
 draw= function() {
@@ -341,17 +409,13 @@ draw= function() {
         if(ntex[0]<10){break;}
     }
     
+    phys();
+    
     var g=new gf();
     
-    rq=g.norm(g.qm(rq,
-        [1, -(mouseY - height/2)*1e-4, (mouseX - width/2)*1e-4, 0]));
     var vf=g.qrot(rq, [0,0,1]),
         vr=g.qrot(rq, [1,0,0]),
         vd=g.qrot(rq, [0,1,0]);
-    
-    vdo=g.mul(g.add(vdo, g.mul(vf, 
-        (mouseIsPressed?0.01:0)*(mouseButton===RIGHT?-1:1))), 0.9);
-    vo=g.add(vo, vdo);
     
     var beam=[g.sub(vf, vr), g.add(vf, vr),
               g.sub(vf, vd), g.add(vf, vd)];
@@ -368,7 +432,7 @@ draw= function() {
     // var p=this.imageData.data;
     
     // background(100);
-    var vdat=view(world, 0, vo, beam);
+    var vdat=view(world, vhi, vo, beam);
     
     for(var i=0; i<vdat.length; i++){
         var face=world[vdat[i].hi][vdat[i].pi].p,
@@ -376,18 +440,23 @@ draw= function() {
         
         var v0=g.sub(face[1], face[0]), v1=g.sub(face[2], face[1]),
             vn=g.norm(g.cross(v0, v1));
-        var vu=g.cross(v1, vn), vv=g.cross(v0, vn);
+        var vu=g.cross(v1, vn), vv=g.cross(/*v0*/vu, vn);
         // vu=g.mul(vu, 2/g.dot(vu, v0));
         // vv=g.mul(vv, 2/g.dot(vv, v1));
-        vu=g.norm(vu);
-        vv=g.norm(vv);
+        vu=g.mul(g.norm(vu), 32);
+        vv=g.mul(g.norm(vv), 32);
         
         var b=sqrt(g.dot(vn, g.norm([5, 9, 3]))*0.4 + 0.6);
         
         rpoly(vdat[i].p,
-            face[0],vn,vu,vv,
-            vo,vf,vr,vd,
-            this.imageData.data,width,height,gtex,b);
+            [face[0], vn, vu, vv],
+            [vo, vf, vr, vd],
+            this.imageData.data, width, height, gtex, b);
+            
+        // rpoly(vdat[i].p,
+        //     face[0],vn,vu,vv,
+        //     vo,vf,vr,vd,
+        //     this.imageData.data,width,height,gtex,b);
         
         // noFill();stroke(255);fill(0x33777777);
         // beginShape();
@@ -405,19 +474,24 @@ draw= function() {
     
     updatePixels();
     
-    // fill(0x33ffffff);noFill();stroke(0x77ffffff);
-    // for(var i=0; i<vdat.length; i++){
-    //     var p=vdat[i].p, p1=[];
-    //     beginShape();
-    //     for(var j=0; j<p.length; j++){
-    //         var v=g.sub(p[j], vo), m=1/(g.dot(v, vf) + 0);
-    //         vertex((m*g.dot(v, vr) + 1.02)*(width*0.49),
-    //                 (m*g.dot(v, vd) + 1.02)*(height*0.49));
-    //     }
-    //     endShape(CLOSE);
-    // }
+    fill(0x33ffffff);noFill();
+    for(var i=0; mapon && i<world.length; i++){
+        stroke(i===vhi?0xbbff9999:0x77ffffff);
+        var h=world[i];
+        for(var j=0; j<h.length; j++){
+            // var p=h[j].p;
+            var p=g.pclip(h[j].p, g.add(vo, g.mul(vf, -4)), vf);
+            beginShape();
+            for(var k=0; k<p.length; k++){
+                var v=g.sub(p[k], vo), m=1/(g.dot(v, vf) + 8);
+                vertex((m*g.dot(v, vr) + 1.02)*(width*0.49),
+                        (m*g.dot(v, vd) + 1.02)*(height*0.49));
+            }
+            endShape(CLOSE);
+        }
+    }
     
-    fill(255, 0, 0);
+    fill(255);
     for(var i=0, s=''; i<3; i++){s+=vo[i].toFixed(2)+"\n";}
     // s+="\n";
     // for(var i=0; i<vdat.length; i++){
