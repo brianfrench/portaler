@@ -4,7 +4,7 @@
 
 
 
-frameRate(30);
+frameRate(0);
 mouseX=width>>1|7;
 mouseY=height>>1|7;
 
@@ -155,27 +155,33 @@ var phys=function(){
     vo=g.add(vo, g.mul(vdo, dt));
 };
 
-var rscr=function(p,wid,hei, pt, po){
+var rscr=function(p,wid,hei, pt, po, h){
     var g=new this.GF();
     var vo=po[0], vf=po[1], vr=po[2], vd=po[3];
     var vu=pt[2], vv=pt[3], vn=pt[1], vt=pt[0];
     var ve=g.sub(po[0], vt);
-    var siz=196, isiz=1/siz;
+    var siz=198, isiz=1/siz;
+    // var h=~~0x495f3210;
     for(var y=-siz; y<siz; y++){
         var vb=g.add(vf, g.mul(vd, y*isiz));
         var b=g.dot(vn, vr)*isiz, a=g.dot(vn, vb) - siz*b;
         var d=(g.dot(ve, vu)*g.dot(vn, vr) + g.dot(vr, vu)*g.dot(vn, ve))*isiz, c=g.dot(ve, vu)*g.dot(vn, vb) + g.dot(vb, vu)*g.dot(vn, ve) - siz*d;
         var f=(g.dot(ve, vv)*g.dot(vn, vr) + g.dot(vr, vv)*g.dot(vn, ve))*isiz, e=g.dot(ve, vv)*g.dot(vn, vb) + g.dot(vb, vv)*g.dot(vn, ve) - siz*f;
-        var l=80200 + y*wid -siz << 2, le=l + (siz << 3);
+        var l=80200 + y*wid - siz << 2, le=l + (siz << 3);
         for(; l<le; l+=4, a+=b, c+=d, e+=f){
-          var m=1/a, u=c*m, v=e*m;
-          p[l]=p[l+1]=p[l+2]=(u ^ v)&255;
+          var m=1/a, u=c*m|0, v=e*m|0, ua=u&63, va=v&63;
+          
+          var j=(h << 8 & 0x3f000) + va*(h << 15 >> 19) +
+                ua*((h << 8 >> 19) + va*(h >> 24));
+        //   var j=0x40000;
+          var i=((u ^ v)&15) + 214;
+          p[l]=p[l+1]=p[l+2]=j*i >> 18;
         }
     }
 };
 
 draw= function() {
-    var ms=millis();
+    var ms=millis(), t=ms*1e-3;
     phys();
     
     var g=new GF();
@@ -192,13 +198,27 @@ draw= function() {
     // var p=this.imageData.data;
     
     var vu=[100,0,0], vv=[0,100,0], vn=[0,0,1], vt=[0,0,5];
+    
+    var b=[];
+    for(var i=0; i<4; i++){
+        // b[i]=sqrt(0.25*(sin((i + 3)*ms/30) + 3));
+        b[i]=(0.5*(sin((i + 3)*ms/30) + 1));
+        // b[i]=0.5;
+    }
+    // b[0]=b[1]=b[2]=0.5;
+    var h=((b[0] - b[1] - b[2] + b[3])*64 & 0xff) << 24 |
+          ((b[1] - b[0])*64 & 0x7f) << 17 |
+          ((b[2] - b[0])*64 & 0x7f) << 10 |
+          b[0]*64 << 4;
+    
     rscr(this.imageData.data,width,height,
-        [vt,vn,vu,vv], [vo,vf,vr,vd]);
+        [vt,vn,vu,vv], [vo,vf,vr,vd],
+        h);
     
     updatePixels();
     
     
-    fill(255);
+    fill(250, 3, 3);
     for(var i=0, s=''; i<3; i++){s+=vo[i].toFixed(2)+"\n";}
     
     text(millis()-ms+"\n"+(this.__frameRate).toFixed(1)+"\n\n"+s+"\n"/*+vd[0].p*/, 4,180,380,380);
