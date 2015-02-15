@@ -144,18 +144,18 @@ var phys=function(){
         [1, (kp[UP] - kp[DOWN])*2e-2, (kp[RIGHT] - kp[LEFT])*2e-2, 0]));
     
     vdo=g.mul(vdo, pow(0.1, dt));
-    vdo=g.add(vdo, g.mul(g.qrot(rq, [0,0,1]), 
+    vdo=g.add(vdo, g.mul([1,0,0],//g.qrot(rq, [0,0,1]), 
         (kp['W'.charCodeAt(0)] - kp['S'.charCodeAt(0)])*10*dt));
-    vdo=g.add(vdo, g.mul(g.qrot(rq, [1,0,0]), 
+    vdo=g.add(vdo, g.mul([0,1,0],//g.qrot(rq, [1,0,0]), 
         (kp['D'.charCodeAt(0)] - kp['A'.charCodeAt(0)])*10*dt));
-    vdo=g.add(vdo, g.mul(g.qrot(rq, [0,1,0]), 
+    vdo=g.add(vdo, g.mul([0,0,1],//g.qrot(rq, [0,1,0]), 
         (kp['Q'.charCodeAt(0)] - kp['E'.charCodeAt(0)])*10*dt));
     
     vdo=g.add(vdo, [0,sin(ms*2e-1)*4e-3,0]);
     vo=g.add(vo, g.mul(vdo, dt));
 };
 
-var rscr=function(p,wid,hei, pt, po, h){
+var rscr=function(p,wid,hei, pt, po, tex, bri){
     var g=new this.GF();
     var vo=po[0], vf=po[1], vr=po[2], vd=po[3];
     var vu=pt[2], vv=pt[3], vn=pt[1], vt=pt[0];
@@ -170,21 +170,157 @@ var rscr=function(p,wid,hei, pt, po, h){
         var l=80200 + y*wid - siz << 2, le=l + (siz << 3);
         for(; l<le; l+=4, a+=b, c+=d, e+=f){
           var m=1/a, u=c*m|0, v=e*m|0, ua=u&63, va=v&63;
-          
+        //   ua++;va++;
+          var h=bri[(u>>6&3) | (v>>6&3)<<2];
           var j=(h << 8 & 0x3f000) + va*(h << 15 >> 19) +
                 ua*((h << 8 >> 19) + va*(h >> 24));
         //   var j=0x40000;
-          var i=((u ^ v)&15) + 214;
-          p[l]=p[l+1]=p[l+2]=j*i >> 18;
+        //   var i=((u ^ v)&15) + 214;
+          var i=tex[ua | va << 6];
+          p[l  ]=j*(i >> 16) >> 18;
+          p[l+1]=j*(i >> 8 & 255) >> 18;
+          p[l+2]=j*(i & 255) >> 18;
         }
     }
 };
 
+// var gtex=[];
+// mouseClicked=function(){
+//     if(mouseButton!==RIGHT){return;}
+//     for(var i=0; i<0x4000; i++){
+//         // var u=(i&63)/64, v=(i>>6)/64, n=noise(u, v);
+//         // gtex[i]=(noise(n*10, u, v)*255|0)*0x10101;
+//         var u=(i&63)/64*360, v=(i>>6)/64*360,
+//             x=cos(u)*(cos(v)*0.2 + 0.5),
+//             y=sin(u)*(cos(v)*0.2 + 0.5),
+//             z=sin(v)*0.2, m=6;
+//         var n=noise(y + noise(x,y,z)*m,
+//                     z + noise(y,z,x)*m,
+//                     x + noise(z,x,y)*m + 1.234);
+//         n*=n*(3 - 2*n);
+//         // n*=n*(3 - 2*n);
+//         // n*=n*(3 - 2*n);
+//         // gtex[i]=(n*255|0)*0x10101;
+//         var c=lerpColor(0xaa7733, 0x554433, n);
+//         c=lerpColor(c, 0xaa33ff, pow(sq(n-0.5) + 1.1, -25));
+//         c=lerpColor(c, 0xeeddcc, pow(n, 5));
+//         c=lerpColor(c, 0x224411, pow(1-n, 2))+(random(16777216)&0x70707);
+//         gtex[i]=c&0xffffff;
+//     }
+// };
+
+var gtex=[], ntex=[0,6,0,0], texf=function(x,y){
+    var g=new GF();//this.g;
+    var s=20;
+    var u,v,m,n,w, m0,rn0,vx=0,vy=0;
+    var h;
+    for(var i=0; i<3; i++){
+        var d0=1e3, d1=1e3, d2=1e3, dx,dy,d0x,d0y, rn=0x234159c;
+        for(var j=0; j<18; j++){
+            rn^=(rn>>3&0xfff)*(rn>>17&0xfff)+0x17e8d9cb;
+            rn^=rn<<j+9;
+            for(var k=0; k<9; k++){
+                dx=x - (rn&1023)/1024 + (k%3) - 1;
+                dy=y - (rn>>10&1023)/1024 + ~~(k/3) - 1;
+                m=dx*dx + dy*dy;
+                if(m<d0){
+                    d2=d1; d1=d0; d0=m; d0x=dx; d0y=dy; rn0=rn;
+                }else if(m<d1){
+                    d2=d1; d1=m;
+                }else if(m<d2){
+                    d2=m;
+                }
+            }
+        }
+        h=(sqrt(d1) - sqrt(d0))*24;
+        if(h>1){h=1;}
+        if(h<0){h=0;}
+        h*=h*(3 - 2*h);
+        var w=rn0*1e-8;
+        m=noise(d0x, d0y, w);
+        w=noise(w + m*16, d0x*6, d0y*6);
+        // w*=w*(3 - 2*w);
+        m=(h*0.2 + 0.8)*w;
+        
+        if(i===0){m0=m;x+=1e-6;}
+        if(i===1){vx=m-m0;x-=1e-6;y+=1e-6;}
+        if(i===2){vy=m-m0;}
+    }
+    var n=g.dot(g.norm(g.cross([1e-6,0,vx/10],[0,1e-6,vy/10])),
+                g.norm([1,1,9]));
+    // n=(n + 1)*0.5;
+    
+    var c0=[[0.6, 0.5, 0.4], [0.4, 0.5, 0.5]][rn0&1],
+        c1=[[0.8, 0.8, 0.8], [0.8, 0.8, 0.9]][rn0&1],
+        c2=[0.6, 0.6, 0.6];
+
+    return g.mul(g.lerp(c2, g.lerp(c0, c1, m0*m0*(3 - 2*m0)), h), 0.9*(n - 1) + 1);
+    // return [x,y,0.5];
+};
+
+mouseClicked=function(){
+    if(mouseButton===RIGHT){
+        ntex=[0,6,0,0];
+    }
+};
+
+
 draw= function() {
-    var ms=millis(), t=ms*1e-3;
-    phys();
+    if(gtex.length<0x4000){
+        for(var i=0; i<0x4000; i++){
+            gtex[i]=(random(16777216)&0x3f3f3f)+0xa0a0a0;
+        }
+    }
     
     var g=new GF();
+    
+    var ms=millis(), t=ms*1e-3;
+    
+    // if(gtex.length!==0x1000){
+    //     gtex=[];
+    //     for(var i=0; i<0x1000; i++){
+    //         gtex[i]=((i&63)|(i>>6))*0x20202 + 0x305030;
+    //     }
+    //     // return;
+    // }
+    
+    while(ntex[1]>=0){
+        if(((ntex[0]&7)===0||ntex[1]>4)&&millis()-ms>6){break;}
+        // gtex[ntex]=texf((ntex&127)/128, (ntex>>7)/128);
+        var s=1<<ntex[1];
+        if(((ntex[2]|ntex[3])&s) || ntex[1]===6){
+            // var vc=texf(ntex[2]/64, ntex[3]/64);
+            
+            var vc=[0,0,0], x=ntex[2]/64, y=ntex[3]/64;
+            for(var i=0; i<4; i++){
+                vc=g.add(vc, texf(x+(i&1)/128, y+(i>>1)/128));
+            }
+            vc=g.mul(vc, 0.25);
+            var c=color(sqrt(vc[0])*256, sqrt(vc[1])*256, sqrt(vc[2])*256)&0xffffff;
+            for(var y=ntex[3]; y<ntex[3]+s; y++){
+                for(var l=y*64 + ntex[2], i=0; i<s; i++, l++){
+                    gtex[l]=c;
+                }
+            }
+            ntex[0]++;
+        }
+        ntex[2]+=s;
+        if(ntex[2]>=64){
+            ntex[2]=0;
+            ntex[3]+=s;
+            if(ntex[3]>=64){
+                ntex[3]=0;
+                ntex[1]--;
+            }
+        }
+        if(ntex[0]<10){break;}
+    }
+    
+    
+    
+    phys();
+    
+    
     
     var vf=g.qrot(rq, [0,0,1]),
         vr=g.qrot(rq, [1,0,0]),
@@ -199,21 +335,48 @@ draw= function() {
     
     var vu=[100,0,0], vv=[0,100,0], vn=[0,0,1], vt=[0,0,5];
     
-    var b=[];
-    for(var i=0; i<4; i++){
-        // b[i]=sqrt(0.25*(sin((i + 3)*ms/30) + 3));
-        b[i]=(0.5*(sin((i + 3)*ms/30) + 1));
-        // b[i]=0.5;
+    // var b=[];
+    // for(var i=0; i<4; i++){
+    //     // b[i]=sqrt(0.25*(sin((i + 3)*ms/30) + 3));
+    //     b[i]=sqrt(0.5*(sin((i + 3)*ms/30) + 1));
+    //     // if(i===3){continue;}
+    //     // b[i]=0.5;
+    // }
+    // // b[0]=b[1]=b[2]=0.5;
+    // var h=((b[0] - b[1] - b[2] + b[3])*64 & 0xff) << 24 |
+    //       ((b[1] - b[0])*64 & 0x7f) << 17 |
+    //       ((b[2] - b[0])*64 & 0x7f) << 10 |
+    //       b[0]*64 << 4;
+    
+    
+    var br=[];
+    for(var i=0; i<16; i++){
+        var m=noise((i&3)*0.02 + t*0.05, (i>>2)*0.02 + t*0.05, t*0.02);
+        // for(var j=0; j<4; j++){m*=m*(3 - 2*m);}
+        // var m=noise((i&3)*0.2, (i>>2)*0.2, t*0.2);
+        m=sin(m*1e4)*0.5 + 0.5;
+        m=sqrt(m*0.7 + 0.3);
+        // br[i]=m;
+        m=(m*64 + 0|0)/64;
+        br[i]=m>0.999?0.999:m;
     }
-    // b[0]=b[1]=b[2]=0.5;
-    var h=((b[0] - b[1] - b[2] + b[3])*64 & 0xff) << 24 |
-          ((b[1] - b[0])*64 & 0x7f) << 17 |
-          ((b[2] - b[0])*64 & 0x7f) << 10 |
-          b[0]*64 << 4;
+    // br[frameCount>>4&15]=0;
+    var bri=[];
+    for(var i=0; i<16; i++){
+        // var 
+        var x=i&3, y=i&12,
+            a=br[i], b=br[(x+1&3)|y],
+            c=br[x|(y+4&12)], d=br[(x+1&3)|(y+4&12)];
+        var h=((a - b - c + d)*64 & 0xff) << 24 |
+              ((b - a)*64 & 0x7f) << 17 |
+              ((c - a)*64 & 0x7f) << 10 |
+              a*64 << 4;
+        bri[i]=h;
+    }
     
     rscr(this.imageData.data,width,height,
         [vt,vn,vu,vv], [vo,vf,vr,vd],
-        h);
+        gtex, bri);
     
     updatePixels();
     
