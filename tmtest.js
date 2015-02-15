@@ -171,43 +171,20 @@ var rscr=function(p,wid,hei, pt, po, tex, bri){
         for(; l<le; l+=4, a+=b, c+=d, e+=f){
           var m=1/a, u=c*m|0, v=e*m|0, ua=u&63, va=v&63;
         //   ua++;va++;
-          var h=bri[(u>>6&3) | (v>>6&3)<<2];
-          var j=(h << 8 & 0x3f000) + va*(h << 15 >> 19) +
-                ua*((h << 8 >> 19) + va*(h >> 24));
+          var h=bri[(u>>6&3) | (v>>4&12)];
+        //   var j=(h << 8 & 0x3f000) + va*(h << 15 >> 19) +
+        //         ua*((h << 8 >> 19) + va*(h >> 24));
+          var j=(h << 12 & 0x7f000) + va*(h << 17 >> 18) +
+                ua*((h << 9 >> 18) + va*(h >> 23));
         //   var j=0x40000;
         //   var i=((u ^ v)&15) + 214;
           var i=tex[ua | va << 6];
-          p[l  ]=j*(i >> 16) >> 18;
-          p[l+1]=j*(i >> 8 & 255) >> 18;
-          p[l+2]=j*(i & 255) >> 18;
+          p[l  ]=j*(i >> 16) >> 19;
+          p[l+1]=j*(i >> 8 & 255) >> 19;
+          p[l+2]=j*(i & 255) >> 19;
         }
     }
 };
-
-// var gtex=[];
-// mouseClicked=function(){
-//     if(mouseButton!==RIGHT){return;}
-//     for(var i=0; i<0x4000; i++){
-//         // var u=(i&63)/64, v=(i>>6)/64, n=noise(u, v);
-//         // gtex[i]=(noise(n*10, u, v)*255|0)*0x10101;
-//         var u=(i&63)/64*360, v=(i>>6)/64*360,
-//             x=cos(u)*(cos(v)*0.2 + 0.5),
-//             y=sin(u)*(cos(v)*0.2 + 0.5),
-//             z=sin(v)*0.2, m=6;
-//         var n=noise(y + noise(x,y,z)*m,
-//                     z + noise(y,z,x)*m,
-//                     x + noise(z,x,y)*m + 1.234);
-//         n*=n*(3 - 2*n);
-//         // n*=n*(3 - 2*n);
-//         // n*=n*(3 - 2*n);
-//         // gtex[i]=(n*255|0)*0x10101;
-//         var c=lerpColor(0xaa7733, 0x554433, n);
-//         c=lerpColor(c, 0xaa33ff, pow(sq(n-0.5) + 1.1, -25));
-//         c=lerpColor(c, 0xeeddcc, pow(n, 5));
-//         c=lerpColor(c, 0x224411, pow(1-n, 2))+(random(16777216)&0x70707);
-//         gtex[i]=c&0xffffff;
-//     }
-// };
 
 var gtex=[], ntex=[0,6,0,0], texf=function(x,y){
     var g=new GF();//this.g;
@@ -335,30 +312,17 @@ draw= function() {
     
     var vu=[100,0,0], vv=[0,100,0], vn=[0,0,1], vt=[0,0,5];
     
-    // var b=[];
-    // for(var i=0; i<4; i++){
-    //     // b[i]=sqrt(0.25*(sin((i + 3)*ms/30) + 3));
-    //     b[i]=sqrt(0.5*(sin((i + 3)*ms/30) + 1));
-    //     // if(i===3){continue;}
-    //     // b[i]=0.5;
-    // }
-    // // b[0]=b[1]=b[2]=0.5;
-    // var h=((b[0] - b[1] - b[2] + b[3])*64 & 0xff) << 24 |
-    //       ((b[1] - b[0])*64 & 0x7f) << 17 |
-    //       ((b[2] - b[0])*64 & 0x7f) << 10 |
-    //       b[0]*64 << 4;
-    
     
     var br=[];
     for(var i=0; i<16; i++){
-        var m=noise((i&3)*0.02 + t*0.05, (i>>2)*0.02 + t*0.05, t*0.02);
+        var m=noise((i&3)*0.02 - t*0.05, (i>>2)*0.02 + t*0.05, t*0.02);
         // for(var j=0; j<4; j++){m*=m*(3 - 2*m);}
         // var m=noise((i&3)*0.2, (i>>2)*0.2, t*0.2);
         m=sin(m*1e4)*0.5 + 0.5;
-        m=sqrt(m*0.7 + 0.3);
-        // br[i]=m;
-        m=(m*64 + 0|0)/64;
-        br[i]=m>0.999?0.999:m;
+        m=sqrt(m*0.8 + 0.2);
+        m=m*128 + 0|0;
+        br[i]=m;
+        // br[i]=m>0.999?0.999:m;
     }
     // br[frameCount>>4&15]=0;
     var bri=[];
@@ -367,14 +331,14 @@ draw= function() {
         var x=i&3, y=i&12,
             a=br[i], b=br[(x+1&3)|y],
             c=br[x|(y+4&12)], d=br[(x+1&3)|(y+4&12)];
-        var h=((a - b - c + d)*64 & 0xff) << 24 |
-              ((b - a)*64 & 0x7f) << 17 |
-              ((c - a)*64 & 0x7f) << 10 |
-              a*64 << 4;
+        var h=(a - b - c + d & 0x1ff) << 23 |
+              (b - a & 0xff) << 15 |
+              (c - a & 0xff) << 7 |
+              a;
         bri[i]=h;
     }
     
-    rscr(this.imageData.data,width,height,
+    rscr(this.imageData.data, width, height,
         [vt,vn,vu,vv], [vo,vf,vr,vd],
         gtex, bri);
     
